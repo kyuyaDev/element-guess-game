@@ -154,6 +154,54 @@ function generateHintsForElement(el) {
         hints.push(`주기율표에서 ${el.group}족에 속합니다.`);
     }
 
+    // --- 새로운 힌트 6종 (양성자, 전자, 상태, 색상, 원자량, 중성자) ---
+    // 1 & 2. 양성자, 전자 수 (명확한 사실)
+    hints.push(`이 원소의 원자핵 속 양성자 수는 정확히 ${el.z}개입니다.`);
+    hints.push(`전기적으로 중성 상태일 때, 전자의 수는 ${el.z}개입니다.`);
+
+    // 3. 상태 (상온 기준)
+    const gases = [1, 2, 7, 8, 9, 10, 17, 18, 36, 54, 86];
+    const liquids = [35, 80];
+    if (gases.includes(el.z)) {
+        hints.push(`상온(20℃)에서 '기체' 상태로 존재합니다.`);
+    } else if (liquids.includes(el.z)) {
+        hints.push(`상온(20℃)에서 '액체' 상태로 존재하는 매우 희귀한 원소입니다.`);
+    } else {
+        hints.push(`상온(20℃)에서 '고체' 상태로 존재합니다.`);
+    }
+
+    // 4. 색상 (명확히 알려진 것만)
+    const colorsMap = {
+        79: "황금색", 29: "붉은색(적갈색)", 16: "노란색", 17: "황록색",
+        35: "적갈색", 53: "보라색을 띤 흑회색", 6: "투명하거나(다이아몬드) 검은색(흑연)",
+        15: "동소체에 따라 흰색, 붉은색, 검은색 등", 83: "은백색 바탕에 무지개빛(산화 시)"
+    };
+    if (colorsMap[el.z]) {
+        hints.push(`눈으로 볼 때 '${colorsMap[el.z]}'을 띠는 특징이 있습니다.`);
+    } else if (gases.includes(el.z) && el.z !== 17) {
+        hints.push(`방 안에 채워져도 눈에 보이지 않는 '무색'입니다.`); // 염소 제외 무색 기체
+    } else if (el.category.includes("금속")) {
+        hints.push(`보통의 금속들처럼 대체로 '은백색' 또는 '회색' 광택을 띱니다.`);
+    }
+
+    // 5 & 6. 원자량, 중성자 수 (자주 쓰이는 주요 원소들만 기입)
+    const knownMasses = {
+        1: 1.0, 2: 4.0, 3: 6.9, 4: 9.0, 5: 10.8, 6: 12.0, 7: 14.0, 8: 16.0, 9: 19.0, 10: 20.2,
+        11: 23.0, 12: 24.3, 13: 27.0, 14: 28.1, 15: 31.0, 16: 32.1, 17: 35.5, 18: 39.9, 19: 39.1, 20: 40.1,
+        26: 55.8, 29: 63.5, 30: 65.4, 47: 107.9, 79: 197.0, 80: 200.6, 82: 207.2
+    };
+    if (knownMasses[el.z]) {
+        let mass = knownMasses[el.z];
+        hints.push(`이 원소의 평균 원자량은 약 ${mass}입니다.`);
+        
+        let neutrons = Math.round(mass) - el.z;
+        if (el.z === 1) {
+            hints.push(`가장 흔한 동위원소의 중성자 수는 0개입니다!`);
+        } else {
+            hints.push(`가장 비율이 높은 동위원소를 기준으로 중성자 수는 대략 ${neutrons}개입니다.`);
+        }
+    }
+
     if (window.GLOBAL_EXTRA_HINTS && window.GLOBAL_EXTRA_HINTS[el.z]) {
         hints.push(...window.GLOBAL_EXTRA_HINTS[el.z]);
     }
@@ -176,10 +224,28 @@ const state = {
     score: 0,
     hearts: 3,
     hintsRevealed: 1, // Start with 1 hint
-    gameActive: false
+    gameActive: false,
+    timeLeft: 60,
+    timerInterval: null
 };
 
 const appDiv = document.getElementById('app');
+
+/* UI Toggles */
+window.toggleHelp = function() {
+    let modal = document.getElementById('helpModal');
+    if (modal) {
+        modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+};
+
+window.toggleSoundUI = function() {
+    if (window.GameAudio) {
+        let isMuted = window.GameAudio.toggleMute();
+        let btn = document.getElementById('soundBtn');
+        if (btn) btn.innerText = isMuted ? '🔇' : '🔊';
+    }
+};
 
 /* Views */
 function renderHome() {
@@ -241,11 +307,13 @@ function startGame() {
 }
 
 function startProblem() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
     if (state.currentIndex >= state.problems.length) {
         return renderGameOver();
     }
     state.hearts = 3;
     state.hintsRevealed = 1;
+    state.timeLeft = 60;
 
     // 무작위로 힌트를 섞은 뒤, 게임 밸런스를 맞추기 위해 최대 20개까지만 끊어서 제공합니다.
     let currentElement = state.problems[state.currentIndex];
@@ -256,6 +324,44 @@ function startProblem() {
     state.maxHints = currentElement.gameHints.length;
 
     renderGame();
+    startTimer();
+}
+
+/* Timer Logic */
+function startTimer() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    updateTimerUI();
+    state.timerInterval = setInterval(() => {
+        state.timeLeft--;
+        updateTimerUI();
+        if (state.timeLeft <= 0) {
+            clearInterval(state.timerInterval);
+            handleTimeout();
+        }
+    }, 1000);
+}
+
+function updateTimerUI() {
+    let timerBar = document.getElementById('timerBar');
+    let timerText = document.getElementById('timerText');
+    if (!timerBar || !timerText) return;
+    
+    timerText.innerText = `${state.timeLeft}초`;
+    timerBar.style.width = `${(state.timeLeft / 60) * 100}%`;
+    
+    if (state.timeLeft <= 10) {
+        timerBar.classList.add('warning');
+    } else {
+        timerBar.classList.remove('warning');
+    }
+}
+
+function handleTimeout() {
+    if (window.GameAudio) window.GameAudio.playSound('timeout');
+    let el = state.problems[state.currentIndex];
+    alert(`시간 초과! ⏳\n정답은 [${el.name} (${el.symbol})] 였습니다.\n(다음 문제로 넘어갑니다)`);
+    state.currentIndex++;
+    startProblem();
 }
 
 function renderGame() {
@@ -279,6 +385,11 @@ function renderGame() {
                 </div>
                 <div class="hearts">${'❤️'.repeat(state.hearts)}${'🤍'.repeat(3 - state.hearts)}</div>
                 <div class="score">Score: ${state.score}</div>
+            </div>
+            
+            <div class="timer-container" id="timerContainer">
+                <div class="timer-bar ${state.timeLeft <= 10 ? 'warning' : ''}" id="timerBar" style="width: ${(state.timeLeft / 60) * 100}%;"></div>
+                <div class="timer-text" id="timerText">${state.timeLeft}초</div>
             </div>
             
             <div class="hints-container">
@@ -305,6 +416,7 @@ function renderGame() {
 function nextHint() {
     if (state.hintsRevealed < state.maxHints) {
         state.hintsRevealed++;
+        if (window.GameAudio) window.GameAudio.playSound('hint');
         renderGame();
     } else {
         alert(`저런, 모든 힌트(${state.maxHints}개)를 다 열어버렸어요! 이제 정답을 유추해보세요.`);
@@ -319,7 +431,10 @@ function submitAnswer() {
     if (!ans) return;
 
     if (ans === el.symbol.toLowerCase() || ans === el.name) {
-        // Correct - 점수 균등 배분 시스템 (최대 100점, 최소 5점)
+        // Correct 
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        if (window.GameAudio) window.GameAudio.playSound('correct');
+        
         let pScore = 100;
         if (state.maxHints > 1) {
             let deductionPerHint = 95 / (state.maxHints - 1);
@@ -333,11 +448,14 @@ function submitAnswer() {
         startProblem();
     } else {
         // Wrong
+        if (window.GameAudio) window.GameAudio.playSound('wrong');
+        
         state.hearts--;
         document.getElementById('inputForm').classList.add('shake');
         setTimeout(() => document.getElementById('inputForm').classList.remove('shake'), 300);
 
         if (state.hearts <= 0) {
+            if (state.timerInterval) clearInterval(state.timerInterval);
             alert(`아쉽네요! 기회를 모두 사용했습니다. 😢\n정답은 [${el.name} (${el.symbol})] 였습니다.`);
             state.currentIndex++;
             startProblem();
