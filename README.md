@@ -1,11 +1,8 @@
 # 🧪 원소 주기율표 스무고개 (Periodic Table Twenty Questions)
 
-**원소 주기율표 스무고개**는 118개의 화학 원소들을 재미있게 학습할 수 있는 **웹 기반의 교육용 추리 게임**입니다. 제공되는 다양한 과학적 힌트들을 조합하여, 제한 시간 내에 정답 원소를 유추해 보세요!
+[원소 주기율표 스무고개 - 게임하기](https://element-guess-game.netlify.app/)
 
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) 
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+**원소 주기율표 스무고개**는 118개의 화학 원소들을 재미있게 학습할 수 있는 **웹 기반의 교육용 추리 게임**입니다. 제공되는 다양한 과학적 힌트들을 조합하여, 제한 시간 내에 정답 원소를 유추해 보세요!
 
 ---
 
@@ -32,35 +29,6 @@
 3. 정답을 안다면 아래 입력창에 **원소 기호** (예: H, O, Fe) 혹은 **한글 이름** (예: 수소, 산소, 철)을 적고 정답을 제출합니다.
 4. 아직 모르겠다면 **[다음 힌트 💡]** 버튼을 눌러 점수를 조금 포기하고 추가 정보를 얻을 수 있습니다.
 5. 시간이 모두 끝날 때까지 최대한 많은 점수를 획득해 **[명예의 전당]**에 등록해 보세요!
-
-## 🛠️ 설치 및 실행 (Installation & Run)
-
-이 프로젝트는 순수 Vanilla (HTML/CSS/JS) 기반으로 만들어져 있어, 별도의 설치나 빌드 과정 없이 즉시 실행이 가능합니다!
-
-1. 레포지토리를 클론합니다.
-```bash
-git clone https://github.com/your-username/element-guess-game.git
-```
-
-2. 클론한 폴더 안의 `index.html` 파일을 크롬(Chrome), 엣지(Edge), 등 모던 웹 브라우저로 엽니다.
-*(또는 VS Code의 `Live Server` 확장을 이용해 바로 실행하셔도 됩니다.)*
-
-## 📁 프로젝트 구조 (File Structure)
-
-```text
-📦element-guess-game
- ┣ 📜index.html      # 게임 메인 뷰 및 마크업 구조
- ┣ 📜style.css       # 테마 및 글래스모피즘(Glassmorphism) UI 스타일
- ┣ 📜app.js          # 게임 코어 로직, Supabase 랭킹 연동 및 UI 컨트롤러
- ┣ 📜hints.js        # 일부 알려지지 않은 원소의 커스텀 추가 힌트 모음
- ┗ 📜audio.js        # Web Audio API를 활용한 코딩 기반(No-Asset) 효과음 제어
-```
-
-## 🤝 기여 (Contributing)
-
-주기율표 데이터나 더 기발한 힌트들을 추가해 주시고 싶으신가요? 
-PR(Pull Request)과 이슈(Issue)는 언제나 환영합니다! 
-원자량 데이터 등 추가적인 정보 개선에 도움을 주실 분들은 `app.js` 내부의 `knownMasses`, `colorsMap` 딕셔너리를 참고해 주세요.
 
 ## 📄 라이선스 (License)
 
